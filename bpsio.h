@@ -4,8 +4,8 @@
 void bpsio_hide_cursor(void);
 void bpsio_show_cursor(void);
 void bpsio_clear_screen(void);
-int bpsio_getch(void);
-int bpsio_getch_nonblocking(void);
+char bpsio_getch(void);
+char bpsio_getch_nonblocking(void);
 
 #ifndef BPSIO_NO_SHORT_NAMES
 #define hide_cursor() bpsio_hide_cursor()
@@ -41,25 +41,31 @@ void bpsio_clear_screen(void) {
   fflush(stdout);
 }
 
-int bpsio_getch(void) {
+char bpsio_getch(void) {
   struct termios old_attr, new_attr;
   int ch;
 
   if (tcgetattr(STDIN_FILENO, &old_attr) == -1) {
-    return -1;
+    return '\0';
   }
 
   new_attr = old_attr;
   new_attr.c_lflag &= ~(ICANON | ECHO);
 
   if (tcsetattr(STDIN_FILENO, TCSANOW, &new_attr) == -1) {
-    return -1;
+    return '\0';
   }
 
   ch = getchar();
 
   tcsetattr(STDIN_FILENO, TCSANOW, &old_attr);
-  return ch;
+
+  // If getchar() encountered EOF or an error, return null
+  if (ch == EOF) {
+    return '\0';
+  }
+
+  return (char)ch;
 }
 
 char bpsio_getch_nonblocking(void) {
@@ -76,6 +82,8 @@ char bpsio_getch_nonblocking(void) {
 
   tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
+  // Initialize to 0 in case read() doesn't populate it (nothing pressed)
+  ch = 0;
   read(STDIN_FILENO, &ch, 1);
 
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
