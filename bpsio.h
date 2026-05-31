@@ -11,6 +11,7 @@ int bpsio_getch(void);
 #define show_cursor() bpsio_show_cursor()
 #define clear_screen() bpsio_clear_screen()
 #define getch() bpsio_getch()
+#define printx(color, ...) bpsio_printx(color, __VA_ARGS__);
 #endif
 
 #ifdef __cplusplus
@@ -62,5 +63,11 @@ int bpsio_getch(void) {
   tcsetattr(STDIN_FILENO, TCSANOW, &old_attr);
   return ch;
 }
+
+#define bpsio_printx(color, ...)                                               \
+  do {                                                                         \
+    printf(color);                                                             \
+    printf(__VA_ARGS__);                                                       \
+  } while (0)
 
 #endif /* BPSIO_IMPLEMENTATION */
