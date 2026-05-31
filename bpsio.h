@@ -5,17 +5,15 @@ void bpsio_hide_cursor(void);
 void bpsio_show_cursor(void);
 void bpsio_clear_screen(void);
 int bpsio_getch(void);
+int bpsio_getch_nonblocking(void);
 
 #ifndef BPSIO_NO_SHORT_NAMES
 #define hide_cursor() bpsio_hide_cursor()
 #define show_cursor() bpsio_show_cursor()
 #define clear_screen() bpsio_clear_screen()
 #define getch() bpsio_getch()
-#define printx(color, ...) bpsio_printx(color, __VA_ARGS__);
-#endif
-
-#ifdef __cplusplus
-}
+#define getch_nonblocking() bpsio_getch_nonblocking()
+#define printx(color, ...) bpsio_printx(color, __VA_ARGS__)
 #endif
 
 #endif /* BPSIO_H */
@@ -62,6 +60,27 @@ int bpsio_getch(void) {
 
   tcsetattr(STDIN_FILENO, TCSANOW, &old_attr);
   return ch;
+}
+
+char bpsio_getch_nonblocking(void) {
+  struct termios oldt, newt;
+  char ch;
+
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+
+  newt.c_lflag &= ~(ICANON | ECHO);
+
+  newt.c_cc[VMIN]  = 0;
+  newt.c_cc[VTIME] = 0;
+
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+  read(STDIN_FILENO, &ch, 1);
+
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+  return (ch == 0) ? '\0' : ch;
 }
 
 #define bpsio_printx(color, ...)                                               \
